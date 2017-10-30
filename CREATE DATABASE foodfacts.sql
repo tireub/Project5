@@ -2,15 +2,15 @@ CREATE DATABASE foodfacts;
 
 SET NAMES utf8;
 
-DROP TABLE IF EXISTS Categories;
+DROP TABLE IF EXISTS Saved_searches;
 DROP TABLE IF EXISTS Parenthood;
 DROP TABLE IF EXISTS Elements;
-DROP TABLE IF EXISTS Saved_searches;
+DROP TABLE IF EXISTS Categories;
 
 CREATE TABLE Categories (
 	id smallint(6) unsigned NOT NULL AUTO_INCREMENT,
-	name varchar(40) NOT NULL,
-	off_id varchar(40) NOT NULL,
+	name varchar(80) NOT NULL,
+	off_id varchar(80) NOT NULL,
 	elem_count smallint(6) unsigned NOT NULL,
 	PRIMARY KEY (id)
 )

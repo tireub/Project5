@@ -1,6 +1,7 @@
 import json
 import MySQLdb
 import requests
+import unicodedata
 
 class Product:
     #product class
@@ -62,8 +63,8 @@ class Category:
 
     #def import single element from OFF API
     def load(self, filepath):
-        self.name = filepath['name']
-        self.off_id = filepath['id']
+        self.name = unicodedata.normalize('NFKD', filepath['name']).encode('ascii', 'ignore')[:39]
+        self.off_id = unicodedata.normalize('NFKD', filepath['id']).encode('ascii', 'ignore')[:39]
         self.elem_count = filepath['products']
 
     #def insert element in database
