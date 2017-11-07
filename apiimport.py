@@ -3,81 +3,74 @@ import requests
 
 from Functions import*
 
+'''
+MAIN
+'''
 
-#resp = requests.get('https://world.openfoodfacts.org/language/1/.json')
-#if resp.status_code != 200:
-    # This means something went wrong.
-#    raise ApiError('GET /produit/ {}'.format(resp.status_code))
+# Connection to database
+db = MySQLdb.connect(host="localhost", user="root", passwd="Davemurray33",
+                     db="foodfacts")
+c = db.cursor()
 
-#print (resp.json()['count']//20+1)
+# Initialisation
+cat_list = Displayedlist()
 
+# Intro message
+welcome_message = "Bienvenue sur la plate-forme Pur Beurre. \n" \
+                  "Vous pouvez à tout moment quitter en tapant exit \n" \
+                  "Pour revenir à la page précédente, tapez retour \n"
+print (welcome_message)
 
-#for i in range(20):
-#    print(resp.json()['products'][i]['brands'])
+# Main loop
+while True:
+    message = ("1: Quel aliment souhaitez-vous remplacer ?\n"
+               "2: Retrouver mes aliments substitués.\n")
+    choice_1 = input(message)
+    if choice_1 == 'exit':
+            quit()
+            # This will stop the program!
 
+    elif choice_1 == "1":
+        index1 = 2
+        # Second choice loop
+        while True:
+            # load diasplay list
+            cat_list.lvl1load(c, index1)
+            message_2 = ('Selectionnez la catégorie désirée: \n\n' + '\n'.join(
+                        '{}: {}'.format(*k) for
+                        k in enumerate(cat_list.elems)) +
+                         '\n20: Afficher plus de choix\n')
+            choice_2 = input(message_2)
 
+            if choice_2 == 'exit':
+                quit()
 
-resp = requests.get('https://world.openfoodfacts.org/country/france/300.json')
-#print (resp.json())
+            elif choice_2 == '20':
+                if cat_list.count == 20:
+                    index1 += 20
+                else:
+                    index1 = 2
 
-plop = resp.json()['products'][18] #['categories']
-#print(plop)
-#print(c.split(','))
+            elif choice_2 == 'retour':
+                break
 
-#aliment_test = Product()
-#aliment_test.jsonread(c)
+            elif int(choice_2) < 20:
+                # choice 3 loop
+                index2 = 0
+                while True:
+                    cat_list.lvl2load(c, int(choice_2) + 1 + index1, index2)
 
-#print(aliment_test.link)
-#print(aliment_test.categories)
-
-#print(aliment_test.categories[1])
-#print(index)
-#cat = Category()
-#tst = requests.get('https://fr.openfoodfacts.org/categories.json')
-#cat.load(tst.json()['tags'][18])
-
-
-test = Categories()
-db = MySQLdb.connect(host="localhost",user="root",passwd="Davemurray33",db="foodfacts")
-#test = Product()
-#test.jsonread(plop)
-#test.parenthood_fill(db)
-
-#print(len(''))
-#test.aliment_fill(db)
-#c = db.cursor()
-#query = ("SELECT id FROM Categories WHERE name = 'Sodas light'")
-#c.execute(query)
-#print(c.fetchall())
-#tuple = []
-#for id in c:
-#    print(id)
-#    tuple.append(id)
-#print(tuple[0])
-
-#test = Product()
-#test.categories = ('Aliments et boissons à base de végétaux', "Aliments d'origine végétale", 'Epicerie',
-#                   'Produits déshydratés', 'Bouillons', 'Produits lyophilisés à reconstituer', 'Bouillons déshydratés',
-#                   'Bouillons de légumes', 'Bouillons cubes')
-#test.categories = list(map(str.encode('ascii')[:39], unicodedata.normalize('NFKD', test.categories)))
-#print(test.categories)
-
-
-#test.name = 'alimenttest'
-#test.link = 'openclassrooms.com'
-#test.grade = 2
-#test.parenthood_fill(db)
-#test.aliment_fill(db)
-
-#print(test.categories)
-#test.parenthood_fill(db)
-#print(test.finest_cat)
-
-
-
-
-
-#test.overview(db)
-#print(cat.name, cat.off_id, cat.elem_count)
-
-fillelements(db)
+                    message_3 = ('Selectionnez la catégorie désirée: \n\n' +
+                                 '\n'.join('{}: {}'.format(*k) for k in
+                                           enumerate(cat_list.elems)) +
+                                 '\n20: Afficher plus de choix\n')
+                    choice_3 = input(message_3)
+                    if choice_3 == 'exit':
+                        quit()
+                    elif choice_3 == 'retour':
+                        break
+                    elif choice_3 == '20':
+                        if cat_list.count == 20:
+                            index2 += 20
+                        else:
+                            index2 = 0
