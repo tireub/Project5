@@ -2,7 +2,13 @@ import json
 import MySQLdb
 import requests
 import unicodedata
+import plotly.plotly as py
+import plotly.graph_objs as go
+import datetime
 
+from operator import itemgetter
+
+import time
 
 class Product:
     # product class
@@ -86,7 +92,8 @@ class Product:
                                  "(category_id, parent_category_id) = (%s, %s)",
                                  (temp[1], temp[0])) == 0:
                         # Insertion within database if doesn't already exist
-                        c.execute("INSERT IGNORE INTO Parenthood VALUES (%s, %s)",
+                        c.execute("INSERT IGNORE INTO Parenthood "
+                                  "VALUES (%s, %s)",
                                   (temp[1], temp[0]))
             self.finest_cat = self.categories[a+1]
         elif len(self.categories) == 1:
@@ -142,6 +149,7 @@ class Category:
 
 
 def fillelements(database):
+    # Fill the database with elements from the Openfoodfacts api
     for a in range(1, 7184):
         link = ('https://world.openfoodfacts.org/country/france/%d.json' % a)
         print(a)
@@ -161,8 +169,10 @@ class Displayedlist:
         self.count = 0
 
     def lvl1load(self, cursor, index):
+        # Load list of categories directly from Categories
         temp = []
-        cursor.execute("SELECT name FROM Categories WHERE id > %s LIMIT %s",
+        cursor.execute("SELECT name, id FROM Categories "
+                       "WHERE id > %s LIMIT %s",
                        (index, 20))
 
         for name in cursor:
@@ -172,10 +182,13 @@ class Displayedlist:
         self.count = len(self.elems)
 
     def lvl2load(self, cursor, id, index):
+        # Load sub-categories
         temp = []
-        cursor.execute("SELECT name FROM Categories INNER JOIN Parenthood ON "
+        cursor.execute("SELECT name, id FROM Categories "
+                       "INNER JOIN Parenthood ON "
                        "Parenthood.category_id = Categories.id WHERE "
-                       "Parenthood.parent_category_id = %s LIMIT %s,%s",
+                       "Parenthood.parent_category_id = %s ORDER BY id "
+                       "LIMIT %s,%s",
                        (id, index, 20))
 
         for name in cursor:
@@ -183,6 +196,148 @@ class Displayedlist:
 
         self.elems = temp
         self.count = len(self.elems)
+
+    def savedload(self, cursor, index):
+        # Retrieve the list of saved searches
+        temp = []
+        cursor.execute("SELECT Saved1.id AS s_id, "
+                       "Saved1.search_date AS s_date, "
+                       "Categories.name AS name "
+                       "FROM Saved_searches AS saved1 "
+                       "INNER JOIN Categories "
+                       "ON Saved1.search_id = Categories.id "
+                       "LIMIT %s, %s", (index, 20))
+
+        for (s_id, s_date, name) in cursor:
+            temp.append([s_id, s_date, name])
+
+        self.elems = temp
+        self.count = len(self.elems)
+
+
+class Results:
+
+    #def initialisation
+    def __init__(self):
+        self.elems = []
+        self.count = 0
+        self.used_categories = []
+        self.cat_id = []
+
+    def fill_categories(self, cursor, id):
+        # Define all categories hierarchically below the selected category
+        global new_childs
+        self.cat_id = id
+        self.used_categories = [id]
+        new_elems = [id]
+
+        while new_elems != []:
+            new_childs = []
+            for elem in new_elems:
+
+                format_str = "SELECT category_id FROM Parenthood " \
+                             "WHERE parent_category_id = {id} " \
+                             "ORDER BY category_id"
+
+                sql_command = format_str.format(id = elem)
+                cursor.execute(sql_command)
+
+                for category_id in cursor:
+                    if category_id[0] not in self.used_categories:
+                        self.used_categories.append(category_id[0])
+                        new_childs.append(category_id[0])
+
+            new_elems = new_childs
+
+    def findelements(self, cursor):
+        # Extract all elements of the desired categories from database
+        temp = []
+        if len(self.used_categories) == 1:
+            format_str = "SELECT nutrition_grade, name, brand, stores, " \
+                         "link, id " \
+                         "FROM Elements WHERE category_id = {list} " \
+                         "ORDER BY nutrition_grade"
+            sql_command = format_str.format(list = self.used_categories[0])
+
+        else:
+            format_str = "SELECT nutrition_grade, name, brand, stores, " \
+                         "link, id " \
+                         "FROM Elements WHERE category_id IN {list} " \
+                         "ORDER BY nutrition_grade"
+            sql_command = format_str.format(list = tuple(self.used_categories))
+
+        cursor.execute(sql_command)
+
+        for (nutrition_grade, name, brand, stores, link, id) in cursor:
+            self.elems.append([nutrition_grade, name, brand, stores, link, id])
+
+    def table(self):
+        # function used to display the results in a table, with color codes
+        # NOT WORKING ATM
+        py.sign_in('Tireub', 'SteveHarris')
+
+        temp = zip(*self.elems)
+        print(list(temp))
+        trace = go.Table(
+            header = dict(values = ['Nutrition grade', 'Name',
+                                    'Brands', 'Stores', 'Link'],
+                          line = dict(color='#7D7F80'),
+                          fill = dict(color='#a1c3d1'),
+                          align = ['left'] * 5),
+            cells = dict(values = list(temp),
+                       line = dict(color='#7D7F80'),
+                       fill = dict(color='#EDFAFF'),
+                       align = ['left'] * 5))
+
+        layout = dict(width=500, height=300)
+        data = [trace]
+        fig = dict(data=data, layout=layout)
+        py.iplot(fig, filename='styled_table')
+
+    def save_search(self, cursor):
+        # Save within database
+        elems_id = list(map(itemgetter(5), self.elems))
+        cursor.execute ("INSERT INTO Saved_searches VALUES "
+                        "(NULL, %s, %s, %s)",
+                        (datetime.datetime.now().date(), self.cat_id, str(elems_id)))
+
+    def load_from_save(self, cursor, id):
+        # Load elements with a save id
+        format_str = ("SELECT search_replacement FROM Saved_searches "
+                      "WHERE id = {search_id}")
+        sql_command = format_str.format(search_id = id)
+        cursor.execute(sql_command)
+        for search_replacement in cursor:
+            elems_id = search_replacement
+
+        id_list = elems_id[0]
+
+        elems_id_num = [int(id_list.split()[0][1:-1])]
+
+        for a in id_list.split()[1:]:
+            elems_id_num.append(int(a[:-1]))
+
+        format_str = "SELECT nutrition_grade, name, brand, stores, " \
+                     "link, id " \
+                     "FROM Elements WHERE id IN {list} " \
+                     "ORDER BY nutrition_grade"
+        sql_command = format_str.format(list = tuple(elems_id_num))
+
+        cursor.execute(sql_command)
+
+        for (nutrition_grade, name, brand, stores, link, id) in cursor:
+            self.elems.append([nutrition_grade, name, brand, stores, link, id])
+
+
+
+
+
+
+
+
+
+
+
 
 
 
