@@ -10,6 +10,7 @@ from operator import itemgetter
 
 import time
 
+
 class Product:
     # product class
 
@@ -28,11 +29,16 @@ class Product:
     # def import from json
     def jsonread(self, json_file):
         if 'product_name_fr' in json_file:
-            self.name = unicodedata.normalize('NFKD', json_file['product_name_fr']).encode('ascii', 'ignore')[:39]
+            self.name = unicodedata.normalize(
+                        'NFKD', json_file['product_name_fr']
+                        ).encode('ascii', 'ignore')[:39]
         if 'code' in json_file:
-            self.link = 'https://fr.openfoodfacts.org/produit/'+json_file['code']
+            self.link = 'https://fr.openfoodfacts.org/produit/' + \
+                        json_file['code']
         if 'ingredients' in json_file:
-            self.ingredients = unicodedata.normalize('NFKD', str(json_file['ingredients'])).encode('ascii', 'ignore')
+            self.ingredients = unicodedata.normalize(
+                               'NFKD', str(json_file['ingredients'])).encode(
+                               'ascii', 'ignore')
         if 'nutrition_grade_fr' in json_file:
             if json_file['nutrition_grade_fr'] == 'a':
                 self.grade = 1
@@ -45,16 +51,21 @@ class Product:
             elif json_file['nutrition_grade_fr'] == 'e':
                 self.grade = 5
         if 'brands' in json_file:
-            self.brand = unicodedata.normalize('NFKD', json_file['brands']).encode('ascii', 'ignore')[:39]
+            self.brand = unicodedata.normalize(
+                         'NFKD', json_file['brands']).encode(
+                         'ascii', 'ignore')[:39]
         if 'sores' in json_file:
-            self.stores = unicodedata.normalize('NFKD', json_file['stores']).encode('ascii', 'ignore')[:39]
+            self.stores = unicodedata.normalize(
+                          'NFKD', json_file['stores']).encode(
+                          'ascii', 'ignore')[:39]
         if 'categories' in json_file:
             # Separate the categories into a list and nromalise the name
             self.categories = json_file['categories'].split(',')
             self.categories = list(map(str.lstrip, self.categories))
             tmp = []
             for cat in self.categories:
-                tmp.append(unicodedata.normalize('NFKD', cat).encode('ascii', 'ignore')[:39])
+                tmp.append(unicodedata.normalize(
+                           'NFKD', cat).encode('ascii', 'ignore')[:39])
             self.categories = tmp
 
     # Insertion of the aliment data in db
@@ -89,7 +100,8 @@ class Product:
 
                 if len(temp) == 2:
                     if c.execute("SELECT category_id FROM Parenthood WHERE"
-                                 "(category_id, parent_category_id) = (%s, %s)",
+                                 "(category_id, parent_category_id) = "
+                                 "(%s, %s)",
                                  (temp[1], temp[0])) == 0:
                         # Insertion within database if doesn't already exist
                         c.execute("INSERT IGNORE INTO Parenthood "
@@ -137,8 +149,10 @@ class Category:
 
     # def import single element from OFF API
     def load(self, filepath):
-        self.name = unicodedata.normalize('NFKD', filepath['name']).encode('ascii', 'ignore')[:39]
-        self.off_id = unicodedata.normalize('NFKD', filepath['id']).encode('ascii', 'ignore')[:39]
+        self.name = unicodedata.normalize(
+                    'NFKD', filepath['name']).encode('ascii', 'ignore')[:39]
+        self.off_id = unicodedata.normalize(
+                      'NFKD', filepath['id']).encode('ascii', 'ignore')[:39]
         self.elem_count = filepath['products']
 
     # def insert element in database
@@ -217,7 +231,7 @@ class Displayedlist:
 
 class Results:
 
-    #def initialisation
+    # def initialisation
     def __init__(self):
         self.elems = []
         self.count = 0
@@ -239,7 +253,7 @@ class Results:
                              "WHERE parent_category_id = {id} " \
                              "ORDER BY category_id"
 
-                sql_command = format_str.format(id = elem)
+                sql_command = format_str.format(id=elem)
                 cursor.execute(sql_command)
 
                 for category_id in cursor:
@@ -257,14 +271,14 @@ class Results:
                          "link, id " \
                          "FROM Elements WHERE category_id = {list} " \
                          "ORDER BY nutrition_grade"
-            sql_command = format_str.format(list = self.used_categories[0])
+            sql_command = format_str.format(list=self.used_categories[0])
 
         else:
             format_str = "SELECT nutrition_grade, name, brand, stores, " \
                          "link, id " \
                          "FROM Elements WHERE category_id IN {list} " \
                          "ORDER BY nutrition_grade"
-            sql_command = format_str.format(list = tuple(self.used_categories))
+            sql_command = format_str.format(list=tuple(self.used_categories))
 
         cursor.execute(sql_command)
 
@@ -279,15 +293,15 @@ class Results:
         temp = zip(*self.elems)
         print(list(temp))
         trace = go.Table(
-            header = dict(values = ['Nutrition grade', 'Name',
-                                    'Brands', 'Stores', 'Link'],
-                          line = dict(color='#7D7F80'),
-                          fill = dict(color='#a1c3d1'),
-                          align = ['left'] * 5),
-            cells = dict(values = list(temp),
-                       line = dict(color='#7D7F80'),
-                       fill = dict(color='#EDFAFF'),
-                       align = ['left'] * 5))
+            header=dict(values=['Nutrition grade', 'Name',
+                                'Brands', 'Stores', 'Link'],
+                        line=dict(color='#7D7F80'),
+                        fill=dict(color='#a1c3d1'),
+                        align=['left'] * 5),
+            cells=dict(values=list(temp),
+                       line=dict(color='#7D7F80'),
+                       fill=dict(color='#EDFAFF'),
+                       align=['left']*5))
 
         layout = dict(width=500, height=300)
         data = [trace]
@@ -297,15 +311,16 @@ class Results:
     def save_search(self, cursor):
         # Save within database
         elems_id = list(map(itemgetter(5), self.elems))
-        cursor.execute ("INSERT INTO Saved_searches VALUES "
-                        "(NULL, %s, %s, %s)",
-                        (datetime.datetime.now().date(), self.cat_id, str(elems_id)))
+        cursor.execute("INSERT INTO Saved_searches VALUES "
+                       "(NULL, %s, %s, %s)",
+                       (datetime.datetime.now().date(),
+                        self.cat_id, str(elems_id)))
 
     def load_from_save(self, cursor, id):
         # Load elements with a save id
         format_str = ("SELECT search_replacement FROM Saved_searches "
                       "WHERE id = {search_id}")
-        sql_command = format_str.format(search_id = id)
+        sql_command = format_str.format(search_id=id)
         cursor.execute(sql_command)
         for search_replacement in cursor:
             elems_id = search_replacement
@@ -321,26 +336,9 @@ class Results:
                      "link, id " \
                      "FROM Elements WHERE id IN {list} " \
                      "ORDER BY nutrition_grade"
-        sql_command = format_str.format(list = tuple(elems_id_num))
+        sql_command = format_str.format(list=tuple(elems_id_num))
 
         cursor.execute(sql_command)
 
         for (nutrition_grade, name, brand, stores, link, id) in cursor:
             self.elems.append([nutrition_grade, name, brand, stores, link, id])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

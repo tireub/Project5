@@ -28,7 +28,7 @@ welcome_message = "Bienvenue sur la plate-forme Pur Beurre. \n" \
 print (welcome_message)
 
 # Main loop
-while main_loop == True:
+while main_loop is True:
     message = ("1: Quel aliment souhaitez-vous remplacer ?\n"
                "2: Retrouver mes aliments substitués.\n")
     choice_1 = input(message)
@@ -39,7 +39,7 @@ while main_loop == True:
     elif choice_1 == "1":
         index1 = 2
         # Second choice loop
-        while main_loop == True:
+        while main_loop is True:
             # load diasplay list
             cat_list.lvl1load(c, index1)
             message_2 = ('\nSelectionnez la catégorie désirée: \n\n' +
@@ -64,7 +64,7 @@ while main_loop == True:
             elif choice_2.isdigit() and int(choice_2) < cat_list.count:
                 # choice 3 loop
                 index2 = 0
-                while main_loop == True:
+                while main_loop is True:
                     cat_list.lvl2load(c, int(choice_2) + 1 + index1, index2)
 
                     message_3 = ('\nSelectionnez la catégorie désirée: \n\n' +
@@ -96,10 +96,10 @@ while main_loop == True:
                             cat_list.lvl2load(c, temp_id[1], index3)
 
                             message_3 = (
-                            '\nSelectionnez la catégorie désirée: \n\n' +
-                            '\n'.join('{}: {}'.format(*k) for k in
-                                      enumerate(map(itemgetter(0),
-                                                    cat_list.elems))))
+                                '\nSelectionnez la catégorie désirée: \n\n' +
+                                '\n'.join('{}: {}'.format(*k)
+                                          for k in enumerate(
+                                    map(itemgetter(0), cat_list.elems))))
                             choice = input(message_3)
 
                             if choice == 'exit':
@@ -108,13 +108,16 @@ while main_loop == True:
                             elif choice == 'retour':
                                 break
 
-                            elif choice.isdigit() and int(choice) < cat_list.count:
-                                results.fill_categories(c, cat_list.elems[int(choice)][1])
+                            elif choice.isdigit() and int(
+                                 choice) < cat_list.count:
+                                results.fill_categories(
+                                    c, cat_list.elems[int(choice)][1])
                                 results.findelements(c)
                                 main_loop = False
 
                     elif choice_3.isdigit() and int(choice_3) < cat_list.count:
-                        results.fill_categories(c, cat_list.elems[int(choice_3)][1])
+                        results.fill_categories(
+                            c, cat_list.elems[int(choice_3)][1])
                         results.findelements(c)
                         main_loop = False
 
@@ -122,14 +125,14 @@ while main_loop == True:
         # retrieve saved searchesinput
         search_index = 0
 
-        while main_loop == True:
+        while main_loop is True:
             # load search history
             cat_list.savedload(c, search_index)
             message = ('\nSelectionnez la sauvegarde désirée: \n\n' +
-                         '\n'.join('{}: {}'.format(*k)
-                                   for k in enumerate(map(itemgetter(1, 2),
-                                                          cat_list.elems))) +
-                         '\n\n20: Afficher plus de choix\n')
+                       '\n'.join('{}: {}'.format(*k)
+                                 for k in enumerate(map(itemgetter(1, 2),
+                                                        cat_list.elems))) +
+                       '\n\n20: Afficher plus de choix\n')
             choice = input(message)
 
             if choice == 'exit':
@@ -156,10 +159,3 @@ while True:
 
     elif result_choice == 'exit':
         quit()
-
-
-
-
-
-
-
